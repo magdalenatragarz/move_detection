@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 
 
-
 def main():
 
     video_path = 'D:\krk.mp4'
