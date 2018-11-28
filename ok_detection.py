@@ -121,8 +121,8 @@ def main():
             #else:
                 #print ("dead person!")
 
-        #cv2.imshow("inter", frame1)
-        cv2.imshow("Thresh", thresh)
+        cv2.imshow("inter", frame1)
+        #cv2.imshow("Thresh", thresh)
         #cv2.imshow("Frame Delta", d)
         #cv2.imshow("Frame Delta", imgray)
 
