@@ -3,7 +3,7 @@ import cv2
 
 def main():
 
-    video_path = 'D:\krk.mp4'
+    video_path = 'D:\krk4.mp4'
     cv2.ocl.setUseOpenCL(False)
 
     tracker = cv2.TrackerBoosting_create()
