@@ -37,7 +37,7 @@ class Person:
 
 
 def main():
-    video_path = 'D:\krk.mp4'
+    video_path = 'D:\krk4.mp4'
 
     vs = cv2.VideoCapture(video_path)
     # initialize the first frame in the video stream
@@ -56,9 +56,9 @@ def main():
             break
 
         # resize the frame, convert it to grayscale, and blur it
-        #frame = imutils.resize(frame, width=500)
+        frame = imutils.resize(frame, width=700)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (21, 21), 0)
+        gray = cv2.GaussianBlur(gray, (25, 25), 1)
 
         # if the first frame is None, initialize it
         if firstFrame is None:
@@ -80,14 +80,14 @@ def main():
         # loop over the contours
         for c in cnts:
             # if the contour is too small, ignore it
-            if cv2.contourArea(c) < 100 or cv2.contourArea(c) > 300:
+            if cv2.contourArea(c) < 50 or cv2.contourArea(c) > 200:
                 continue
 
             # compute the bounding box for the contour, draw it on the frame,
             # and update the text
             (x,y,w,h) = cv2.boundingRect(c)
 
-            if y < 300:
+            if y < 250:
                 continue
 
             if not people:
