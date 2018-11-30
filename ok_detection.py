@@ -1,10 +1,43 @@
 import cv2
 import math
 import imutils
-from array import array
+import pygame
 
 people = []
 
+white = (255, 255, 255)
+blue = (0, 0, 255)
+red = (255, 0, 0)
+black = (0, 0, 0)
+beige = (164, 168, 128)
+purple = (75, 0, 130)
+lb = (253, 245, 230)
+lr = (255, 99, 71)
+orange = (255, 165, 0)
+yellow = (255, 255, 255)
+ly = (255, 255, 51)
+colors = [blue,red,black,beige,purple,lb,lr,orange,yellow,ly]
+
+def draw_people():
+    running = True
+    background_colour = (255, 255, 255)
+    (width, height) = (700, 500)
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption('Tutorial 1')
+    screen.fill(background_colour)
+    i=0
+    while running:
+        for person in people:
+            if (len(person.history) > 1):
+                pygame.draw.lines(screen, colors[i % len(colors)], False, person.history, 2)
+                print(person.history)
+                pygame.display.update()
+                pygame.display.flip()
+                i+= 1
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
 class Point(object):
     def __init__(self,x,y):
@@ -18,7 +51,7 @@ class Person(object):
         self.w = w
         self.h = h
         self.history = []
-        self.history.append((x,y))
+        self.history.append([x,y])
         self.changes = 0
         self.is_alive = True
 
@@ -27,7 +60,7 @@ class Person(object):
         self.y = y
         #self.w = w
         #self.h = h
-        self.history.append((x,y))
+        self.history.append([x,y])
 
 
     def dist(self,x,y):
@@ -77,7 +110,9 @@ def main():
         blur = cv2.GaussianBlur(imgray, (3, 3), 0)
         ret, thresh = cv2.threshold(blur, 15, 255, cv2.THRESH_BINARY)
         #thresh = cv2.dilate(thresh, None, iterations=2)
-        _, contours, h = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        final = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,None)
+        final = cv2.dilate(final, None, iterations=2)
+        _, contours, h = cv2.findContours(final, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         #contours = contours[0] if imutils.is_cv2() else contours[1]
 
@@ -87,6 +122,8 @@ def main():
 
             # get bounding box from countour
             (x, y, w, h) = cv2.boundingRect(c)
+
+
 
             if y < 250:
                 continue
@@ -99,10 +136,10 @@ def main():
 
             updated = False
             for person in people:
-                if person.dist(x,y) < 40 and not(person.updated) and person.is_person_alive():
-                    if person.dist(x,y) < 10:
-                        person.die()
-                        continue
+                if person.dist(x,y) < 50 and not(person.updated) and person.is_person_alive():
+                    # if person.dist(x,y) < 10:
+                    #     person.die()
+                    #     continue
                     #print("person from ",person.x," ",person.y, "updated to ",x," ",y)
                     person.update(x,y)
                     person.mark_updated()
@@ -121,10 +158,11 @@ def main():
             #else:
                 #print ("dead person!")
 
-        #cv2.imshow("inter", frame1)
-        cv2.imshow("Thresh", thresh)
-        #cv2.imshow("Frame Delta", d)
-        #cv2.imshow("Frame Delta", imgray)
+        cv2.imshow("inter", frame1)
+        # cv2.imshow("Thresh", thresh)
+        # cv2.imshow("Frame Delta", d)
+        # cv2.imshow("Frame Delta", imgray)
+        # cv2.imshow("Final", final)
 
         if cv2.waitKey(40) == 27:
             break
@@ -141,12 +179,8 @@ def main():
 
 main()
 
-# x = Person(1,2,3,4)
-# people.append(x)
-# y = Person(4,6,7,8)
-# people.append(y)
-# y.update(2,5)
-#
-# print(people[0].history)
-# print(people[1].history)
+print (people[1].history)
+draw_people()
+
+
 
