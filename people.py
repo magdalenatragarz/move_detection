@@ -1,4 +1,6 @@
 import math
+import pygame
+import colors
 
 class Point(object):
     def __init__(self,x,y):
@@ -87,4 +89,25 @@ class Person(object):
 
     def is_person_alive(self):
         return self.is_alive
+
+
+def draw_people(PEOPLE_LIST):
+    running = True
+    background_colour = (255, 255, 255)
+    (width, height) = (700, 500)
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption('Tutorial 1')
+    screen.fill(background_colour)
+    i = 0
+    for person in PEOPLE_LIST:
+        if (len(person.history) > 4):
+            pygame.draw.lines(screen, colors.colors[i % len(colors.colors)], False, person.history, 2)
+            print(person.history)
+            pygame.display.update()
+            pygame.display.flip()
+            i += 1
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 

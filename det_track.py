@@ -1,11 +1,13 @@
 import cv2
 import imutils
 import people
+import numpy as np
 
 VIDEO_PATH = 'D:\krk3.mov'
 PEOPLE_LIST = []
 
 def detect():
+
     cap = cv2.VideoCapture(VIDEO_PATH)
 
     ret, frame1 = cap.read()
@@ -27,9 +29,12 @@ def detect():
         for c in contours:
             (x, y, w, h) = cv2.boundingRect(c)
 
-            # if cv2.contourArea(c) < 50 or cv2.contourArea(c) > 150:
+            # if cv2.contourArea(c) < 20 or cv2.contourArea(c) > 150:
             #      continue
-            #
+
+            if w/h > 0.8 or w/h < 0.2:
+                continue
+
             if y < 250:
                 continue
 
@@ -63,4 +68,21 @@ def detect():
     cap.release()
 
 
-detect()
+
+#detect()
+
+kalman = cv2.KalmanFilter()
+kalman.transitionMatrix = np.array([[1., 1.], [0., 1.]])
+kalman.measurementMatrix = 1. * np.ones((1, 2))
+kalman.processNoiseCov = 1e-5 * np.eye(2)
+kalman.measurementNoiseCov = 1e-1 * np.ones((1, 1))
+kalman.errorCovPost = 1. * np.ones((2, 2))
+kalman.statePost = 0.1 * np.random.randn(2, 1)
+
+for p in PEOPLE_LIST:
+    if(len(p.history) > 4):
+        print(p.history)
+
+#people.draw_people(PEOPLE_LIST)
+
+
