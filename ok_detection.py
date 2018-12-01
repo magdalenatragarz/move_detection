@@ -26,15 +26,14 @@ def draw_people():
     pygame.display.set_caption('Tutorial 1')
     screen.fill(background_colour)
     i=0
+    for person in people_ok:
+        if (len(person.history) > 1):
+            pygame.draw.lines(screen, colors[i % len(colors)], False, person.history, 2)
+            print(person.history)
+            pygame.display.update()
+            pygame.display.flip()
+            i += 1
     while running:
-        for person in people:
-            if (len(person.history) > 1):
-                pygame.draw.lines(screen, colors[i % len(colors)], False, person.history, 2)
-                print(person.history)
-                pygame.display.update()
-                pygame.display.flip()
-                i+= 1
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -85,17 +84,19 @@ class Person(object):
 
 
 def main():
-
     video_path = 'D:\krk3.mov'
-    cv2.ocl.setUseOpenCL(False)
 
-    #read video file
     cap = cv2.VideoCapture(video_path)
 
     ret, frame1 = cap.read()
     ret, frame2 = cap.read()
 
-    counter = 0
+    background_colour = (255, 255, 255)
+    (width, height) = (700, 500)
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption('Tutorial 1')
+    screen.fill(background_colour)
+
     while ret:
 
         for x in people:
@@ -105,25 +106,21 @@ def main():
         frame1 = imutils.resize(frame1, width=700)
         frame2 = imutils.resize(frame2, width=700)
         d = cv2.absdiff(frame1, frame2)
-
         imgray = cv2.cvtColor(d, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(imgray, (3, 3), 0)
         ret, thresh = cv2.threshold(blur, 15, 255, cv2.THRESH_BINARY)
-        #thresh = cv2.dilate(thresh, None, iterations=2)
         final = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,None)
         final = cv2.dilate(final, None, iterations=2)
         _, contours, h = cv2.findContours(final, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        #contours = contours[0] if imutils.is_cv2() else contours[1]
-
         for c in contours:
-            if cv2.contourArea(c) < 100 or cv2.contourArea(c) > 200:
+            if cv2.contourArea(c) < 70 or cv2.contourArea(c) > 150:
                 continue
 
-            # get bounding box from countour
             (x, y, w, h) = cv2.boundingRect(c)
 
-
+            if w/h > 0.8 and w/h < 0.2:
+                continue
 
             if y < 250:
                 continue
@@ -132,15 +129,15 @@ def main():
                 person_x = Person(x, y, w, h)
                 person_x.mark_updated()
                 people.append(person_x)
-                continue
+                break
 
             updated = False
             for person in people:
-                if person.dist(x,y) < 50 and not(person.updated) and person.is_person_alive():
-                    # if person.dist(x,y) < 10:
-                    #     person.die()
-                    #     continue
-                    #print("person from ",person.x," ",person.y, "updated to ",x," ",y)
+                if person.dist(x,y) < 30 and not(person.updated): #and person.is_person_alive():
+                    if person.dist(x,y) < 5 :
+                        person.die()
+                        person.mark_updated()
+                        break
                     person.update(x,y)
                     person.mark_updated()
                     updated = True
@@ -149,14 +146,16 @@ def main():
                 person_y = Person(x, y, w, h)
                 person_y.mark_updated()
                 people.append(person_y)
-            # draw bounding box
+                break
 
         for person in people:
-            if (person.is_alive):
-                #cv2.rectangle(frame1, (person.x, person.y), (person.x + person.w, person.y + person.h), (0, 255, 0), 2)
+            if (person.is_alive) and len(person.history)>3:
                 cv2.rectangle(frame1, (person.x, person.y), (person.x+15, person.y+25), (0, 255, 0), 2)
-            #else:
-                #print ("dead person!")
+                pygame.draw.lines(screen, red, False, person.history, 2)
+                print(person.history)
+                pygame.display.update()
+                pygame.display.flip()
+
 
         cv2.imshow("inter", frame1)
         # cv2.imshow("Thresh", thresh)
@@ -167,11 +166,12 @@ def main():
         if cv2.waitKey(40) == 27:
             break
 
-        counter = counter+1
-        print("counter: ",counter)
         frame1 = frame2
         ret, frame2 = cap.read()
-        # j=j+1`
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
     cv2.destroyAllWindows()
     cap.release()
@@ -179,8 +179,10 @@ def main():
 
 main()
 
-print (people[1].history)
-draw_people()
 
-
+people_ok =[]
+for p in people:
+    if p.is_alive and len(p.history)>2:
+        print(p.history)
+        people_ok.append(p)
 

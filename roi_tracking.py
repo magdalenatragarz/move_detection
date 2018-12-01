@@ -1,5 +1,6 @@
 import numpy as np
 import cv2 as cv
+import imutils
 cap = cv.VideoCapture('D:\krk3.mov')
 # take first frame of the video
 ret,frame = cap.read()
@@ -16,6 +17,7 @@ cv.normalize(roi_hist,roi_hist,0,255,cv.NORM_MINMAX)
 term_crit = ( cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 1 )
 while(1):
     ret ,frame = cap.read()
+    frame =  imutils.resize(frame, width=700)
     if ret == True:
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
         dst = cv.calcBackProject([hsv],[0],roi_hist,[0,180],1)
