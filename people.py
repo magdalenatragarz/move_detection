@@ -23,13 +23,16 @@ class Person(object):
         #self.h = h
         self.history.append([x,y])
 
-    def define_direction(self):
+    def is_ok_with_direction(self,x,y):
+        if len(self.history) < 3 :
+            return True
+
+
+
         self.left = False
         self.right = False
         self.up = False
         self.down = False
-
-
         self.y_min = 0
         self.y_max = 0
         self.x_min = 0

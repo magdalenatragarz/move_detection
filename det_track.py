@@ -19,8 +19,8 @@ def detect():
         imgray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(imgray, (5, 5), 1)
         ret, thresh = cv2.threshold(blur, 15, 255, cv2.THRESH_BINARY)
-        deleteNoises = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, None)
-        filtered = cv2.dilate(deleteNoises, None, iterations=2)
+        #deleteNoises = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, None)
+        filtered = cv2.dilate(thresh, None, iterations=2)
 
         _, contours, _ = cv2.findContours(filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 

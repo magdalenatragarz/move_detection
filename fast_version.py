@@ -37,13 +37,16 @@ class Person:
 
 
 def main():
-    video_path = 'D:\krk4.mp4'
+    video_path = 'D:\krk3.mov'
 
     vs = cv2.VideoCapture(video_path)
     # initialize the first frame in the video stream
     firstFrame = None
     # loop over the frames of the video
     while True:
+
+        for x in people:
+            x.mark_not_updated()
         # grab the current frame and initialize the occupied/unoccupied
         # text
         frame = vs.read()
@@ -65,22 +68,31 @@ def main():
             firstFrame = gray
             continue
 
+        frameDelta = cv2.absdiff(firstFrame, gray)
+
+        #imgray = cv2.cvtColor(frameDelta, cv2.COLOR_BGR2GRAY)
+        blur = cv2.GaussianBlur(frameDelta, (3, 3), 0)
+        ret, thresh = cv2.threshold(blur, 15, 255, cv2.THRESH_BINARY)
+        thresh = cv2.dilate(thresh, None, iterations=2)
+        cnts = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+
         # compute the absolute difference between the current frame and
         # first frame
-        frameDelta = cv2.absdiff(firstFrame, gray)
-        thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
-
-        # dilate the thresholded image to fill in holes, then find contours
-        # on thresholded image
-        thresh = cv2.dilate(thresh, None, iterations=2)
-        cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                                cv2.CHAIN_APPROX_SIMPLE)
+        #
+        # thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
+        #
+        # # dilate the thresholded image to fill in holes, then find contours
+        # # on thresholded image
+        # thresh = cv2.dilate(thresh, None, iterations=2)
+        # cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+        #                         cv2.CHAIN_APPROX_SIMPLE)
         cnts = cnts[0] if imutils.is_cv2() else cnts[1]
 
         # loop over the contours
         for c in cnts:
             # if the contour is too small, ignore it
-            if cv2.contourArea(c) < 50 or cv2.contourArea(c) > 200:
+            if cv2.contourArea(c) < 100 or cv2.contourArea(c) > 200:
                 continue
 
             # compute the bounding box for the contour, draw it on the frame,
@@ -100,6 +112,8 @@ def main():
                 print("porownanie wspolrzednych:", x, ", ",y , " z ", person.x, ", ", person.y)
                 print("wynik:")
                 if person.dist(x,y) < 50:
+                    if person.dist == 0:
+                        person.die()
                     person.update(x,y,w,h)
                     print("update")
                     updated = True
