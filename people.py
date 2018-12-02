@@ -1,6 +1,8 @@
 import math
 import pygame
 import colors
+import cv2 as cv
+import numpy as np
 
 class Point(object):
     def __init__(self,x,y):
@@ -14,21 +16,19 @@ class Person(object):
         self.w = w
         self.h = h
         self.history = []
-        self.history.append([x,y])
+        self.history.append((x,y))
         self.changes = 0
         self.is_alive = True
+        self.updated = True
 
     def update(self,x,y):
         self.x = x
         self.y = y
-        #self.w = w
-        #self.h = h
-        self.history.append([x,y])
+        self.history.append((x,y))
 
     def is_ok_with_direction(self,x,y):
         if len(self.history) < 3 :
             return True
-
 
 
         self.left = False
@@ -89,6 +89,26 @@ class Person(object):
 
     def is_person_alive(self):
         return self.is_alive
+
+
+# -----------------------------------------------------------------------
+
+# Instantiate OCV kalman filter
+class KalmanFilter:
+
+    kf = cv.KalmanFilter(4, 2)
+    kf.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
+    kf.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
+
+    def Estimate(self, coordX, coordY):
+        ''' This function estimates the position of the object'''
+        measured = np.array([[np.float32(coordX)], [np.float32(coordY)]])
+        self.kf.correct(measured)
+        predicted = self.kf.predict()
+        return predicted
+
+
+# -----------------------------------------------------------------------
 
 
 def draw_people(PEOPLE_LIST):
