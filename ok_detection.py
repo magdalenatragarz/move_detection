@@ -76,13 +76,13 @@ def main():
         imgray = cv2.cvtColor(d, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(imgray, (3, 3), 0)
         ret, thresh = cv2.threshold(blur, 15, 255, cv2.THRESH_BINARY)
-        #thresh = cv2.dilate(thresh, None, iterations=2)
+        thresh = cv2.dilate(thresh, None, iterations=2)
         _, contours, h = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         #contours = contours[0] if imutils.is_cv2() else contours[1]
 
         for c in contours:
-            if cv2.contourArea(c) < 100 or cv2.contourArea(c) > 200:
+            if cv2.contourArea(c) < 60 or cv2.contourArea(c) > 150:
                 continue
 
             # get bounding box from countour
@@ -114,10 +114,11 @@ def main():
                 people.append(person_y)
             # draw bounding box
 
-        for person in people:
-            if (person.is_alive):
-                #cv2.rectangle(frame1, (person.x, person.y), (person.x + person.w, person.y + person.h), (0, 255, 0), 2)
-                cv2.rectangle(frame1, (person.x, person.y), (person.x+15, person.y+25), (0, 255, 0), 2)
+            cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        #for person in people:
+           # if (person.is_alive):
+                # cv2.rectangle(frame1, (person.x, person.y), (person.x + person.w, person.y + person.h), (0, 255, 0), 2)
+                #cv2.rectangle(frame1, (person.x, person.y), (person.x+15, person.y+25), (0, 255, 0), 2)
             #else:
                 #print ("dead person!")
 
