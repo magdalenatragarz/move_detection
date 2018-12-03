@@ -73,7 +73,8 @@ def detect():
 
         for p in PEOPLE_LIST:
             if p.updated:
-                cv2.rectangle(frame1, (p.x, p.y), (p.x + 15, p.y + 25), (0, 255, 0), 2)
+                #cv2.rectangle(frame1, (p.x, p.y), (p.x + 15, p.y + 25), (0, 255, 0), 2)
+                cv2.rectangle(frame1, (p.x, p.y), (p.x + p.w, p.y + p.h), (0, 255, 0), 2)
                 pygame.draw.circle(screen, colors.black, [p.x, p.y], 2, 2)
                 pygame.display.update()
                 pygame.display.flip()
