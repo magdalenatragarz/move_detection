@@ -14,7 +14,6 @@ def detect():
 
     (width, height) = (700, 500)
     screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption('Tutorial 1')
     screen.fill(colors.white)
 
     cv2.ocl.setUseOpenCL(False);
@@ -76,8 +75,6 @@ def detect():
                 person.mark_updated()
                 PEOPLE_LIST.append(person)
                 break
-
-        j=[]
 
         for p in PEOPLE_LIST:
             if p.updated:
