@@ -3,9 +3,12 @@ import imutils
 import people
 import pygame
 import colors
+import numpy as np
+import math
 
-VIDEO_PATH = 'D:\krk3.mov'
+VIDEO_PATH = 'D:\krk.mp4'
 PEOPLE_LIST = []
+
 
 def detect():
 
@@ -14,25 +17,27 @@ def detect():
     pygame.display.set_caption('Tutorial 1')
     screen.fill(colors.white)
 
+    cv2.ocl.setUseOpenCL(False);
     cap = cv2.VideoCapture(VIDEO_PATH)
 
     ret, frame1 = cap.read()
     ret, frame2 = cap.read()
-
 
     while ret:
 
         for x in PEOPLE_LIST:
             x.mark_not_updated()
 
+        _, frame = cap.read()
         frame1 = imutils.resize(frame1, width=700)
         frame2 = imutils.resize(frame2, width=700)
         diff = cv2.absdiff(frame1, frame2)
         imgray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(imgray, (5, 5), 1)
         ret, thresh = cv2.threshold(blur, 15, 255, cv2.THRESH_BINARY)
-        #deleteNoises = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, None)
-        filtered = cv2.dilate(thresh, None, iterations=2)
+        delete_noises = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, None)
+        kernel = np.ones((5, 5), np.uint8)
+        filtered = cv2.dilate(delete_noises, kernel, iterations=1)
 
         _, contours, _ = cv2.findContours(filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -42,10 +47,8 @@ def detect():
             if cv2.contourArea(c) < 40:
                  continue
 
-
             if y < 250:
                 continue
-
 
             if not PEOPLE_LIST:
                 person = people.Person(x,y,w,h)
@@ -55,35 +58,35 @@ def detect():
 
             updated = False
             for p in PEOPLE_LIST :
-                if p.dist(x,y) < 20 and not(person.updated):
-                    p.update(x,y)
-                    p.mark_updated()
-                    updated = True
-                    break
-            if updated==False:
+                if len(p.history) > 5:
+                    [coord_x, coord_y] = p.predict_move()
+                    if dist(x,y,coord_x,coord_y) < 20 and not p.updated:
+                        p.update(x,y)
+                        p.mark_updated()
+                        updated = True
+                        break
+                else:
+                    if p.dist(x,y) < 20 and not p.updated:
+                        p.update(x,y)
+                        p.mark_updated()
+                        updated = True
+                        break
+            if not updated:
                 person = people.Person(x,y,w,h)
                 person.mark_updated()
                 PEOPLE_LIST.append(person)
                 break
 
-            # cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            # pygame.draw.circle(screen,colors.black,[x,y],2,2)
-            # pygame.display.update()
-            # pygame.display.flip()
-
         for p in PEOPLE_LIST:
             if p.updated:
-                #cv2.rectangle(frame1, (p.x, p.y), (p.x + 15, p.y + 25), (0, 255, 0), 2)
                 cv2.rectangle(frame1, (p.x, p.y), (p.x + p.w, p.y + p.h), (0, 255, 0), 2)
                 pygame.draw.circle(screen, colors.black, [p.x, p.y], 2, 2)
                 pygame.display.update()
                 pygame.display.flip()
 
+
         cv2.imshow("inter", frame1)
-        #cv2.imshow("Final", filtered)
-        #cv2.imshow("Final", frame2)
-        #cv2.imshow("Final", diff)
-        #cv2.imshow("Final", thresh)
+        cv2.imshow("Final", filtered)
 
         if cv2.waitKey(40) == 27:
             break
@@ -98,33 +101,10 @@ def detect():
     cap.release()
 
 
+def dist(x1,y1,x2,y2):
+    return math.hypot(x1 - x2, y1 - y2)
+
 
 detect()
-
-# kf = KalmanFilter(dim_x=2, dim_z=2)
-# kf.F = np.array([[1., 1.],[0., 1.]])
-# kf.H = np.array([[1., 0.]])
-# kf.R[2:,2:] *= 10.
-# kf.P *= 1000.
-# kf.P = np.array([[1000., 0.],[0., 1000.]])
-# kf.Q = Q_discrete_white_noise(dim=2, dt=0.1, var=0.13)
-# kf.R = 5
-# kf.x = np.array([15., 10.])
-#
-# kf.update(np.array([17., 11.]).reshape(2,1))
-# kf.predict()
-# print(kf.x)
-
-ok = []
-
-for p in PEOPLE_LIST:
-    if(len(p.history) > 4):
-        print(p.history)
-        ok.append(p.history)
-
-
-
-
-#people.draw_people(PEOPLE_LIST)
 
 
