@@ -77,6 +77,8 @@ def detect():
                 PEOPLE_LIST.append(person)
                 break
 
+        j=[]
+
         for p in PEOPLE_LIST:
             if p.updated:
                 cv2.rectangle(frame1, (p.x, p.y), (p.x + p.w, p.y + p.h), (0, 255, 0), 2)
