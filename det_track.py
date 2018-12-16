@@ -6,45 +6,15 @@ import colors
 import numpy as np
 import math
 
-VIDEO_PATH = 'D:\krk.mp4'
+VIDEO_PATH = 'D:\krk3.mov'
 PEOPLE_LIST = []
-potential_people = []
-moves_after_people = []
-moves_after_potential_people = []
-
-def dist(x1, y1, x2, y2):
-    return math.hypot(x1 - x2, y1 - y2)
-
-
-def potential_person_to_person(potential_people,people):
-    new_potential_people = []
-    for pp in potential_people:
-        if len(pp.history) >= 5:
-            people.append(pp)
-        else:
-            new_potential_people.append(pp)
-    return  (new_potential_people,people)
-
-def is_move_good_for_person(move,person):
-    ret = True
-    (x, y, w, h) = cv2.boundingRect(move)
-    if cv2.contourArea(move) < 40:
-        return False
-    if y < 250:
-        return False
-    if len(person.history) > 5:
-        [coord_x, coord_y] = person.predict_move()
-        if dist(x, y, coord_x, coord_y) < 10 and person.dist(x, y) < 20 and person.dist(x, y) > 5 :
-            ret = False
-    else:
-        if person.dist(x, y) < 20 and person.dist(x, y) > 5:
-            ret = False
-    return ret
 
 
 def detect():
-    potential_people = []
-    real_people = []
+
+    (width, height) = (700, 500)
+    screen = pygame.display.set_mode((width, height))
+    screen.fill(colors.white)
 
     cv2.ocl.setUseOpenCL(False)
     cap = cv2.VideoCapture(VIDEO_PATH)
@@ -52,7 +22,13 @@ def detect():
     ret, frame1 = cap.read()
     ret, frame2 = cap.read()
 
+    frame_count = 0
     while ret:
+        frame_count += 1
+
+        for x in PEOPLE_LIST:
+            x.mark_not_updated()
+
         _, frame = cap.read()
         frame1 = imutils.resize(frame1, width=700)
         frame2 = imutils.resize(frame2, width=700)
@@ -61,113 +37,54 @@ def detect():
         blur = cv2.GaussianBlur(imgray, (5, 5), 1)
         ret, thresh = cv2.threshold(blur, 15, 255, cv2.THRESH_BINARY)
         delete_noises = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, None)
-        kernel = np.ones((6, 3), np.uint8)
+        kernel = np.ones((5, 5), np.uint8)
+        filtered = cv2.dilate(delete_noises, kernel, iterations=1)
 
-        filtered = cv2.dilate(delete_noises, kernel, iterations=3)
-        filtered = cv2.morphologyEx(filtered, cv2.MORPH_CLOSE, None)
+        _, contours, _ = cv2.findContours(filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        _, all_moves, _ = cv2.findContours(filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        print("all_moves ok")
-        moves_after_people = all_moves;
+        for c in contours:
+            (x, y, w, h) = cv2.boundingRect(c)
 
-        if len(real_people)!=0 :
-            moves_after_people.clear()
+            if cv2.contourArea(c) < 40:
+                 continue
 
-        updated = False
-        for p in real_people:
-            for move in all_moves:
-                (x, y, w, h) = cv2.boundingRect(move)
-                if cv2.contourArea(move) < 40:
-                    continue
-                if y < 250:
-                    continue
-
-                if (is_move_good_for_person(move, p)):
-                    p.update(x, y)
-                    updated = True
-                else:
-                    moves_after_people.append(move)
-            if not updated:
-                [coord_x, coord_y] = p.predict_move()
-                p.update(coord_x, coord_y)
-
-
-        for move in moves_after_people:
-            (x, y, w, h) = cv2.boundingRect(move)
-            if cv2.contourArea(move) < 40:
-                continue
             if y < 250:
                 continue
 
-            if not potential_people:
-                person = people.Person(x, y, w, h)
-                potential_people.append(person)
-                continue
+            if not PEOPLE_LIST:
+                person = people.Person(x,y,frame_count)
+                person.mark_updated()
+                PEOPLE_LIST.append(person)
+                break
 
-            for pp in potential_people:
-                if (is_move_good_for_person(move,pp)):
-                    pp.update(x,y)
+            updated = False
+            for p in PEOPLE_LIST :
+                if len(p.history) > 5:
+                    [coord_x, coord_y] = p.predict_move()
+                    if dist(x,y,coord_x,coord_y) < 5 and not p.updated:
+                        p.update(x,y,frame_count)
+                        p.mark_updated()
+                        updated = True
+                        break
+                else:
+                    if p.dist(x,y) < 10 and p.dist(x,y) > 5 and not p.updated:
+                        p.update(x,y,frame_count)
+                        p.mark_updated()
+                        updated = True
+                        break
+            if not updated:
+                person = people.Person(x,y,frame_count)
+                person.mark_updated()
+                PEOPLE_LIST.append(person)
+                break
 
-        (new_potential_people,new_real_people) = potential_person_to_person(potential_people, real_people)
-        potential_people = new_potential_people
-        real_people = new_real_people
-
-        for p in real_people:
-            cv2.rectangle(frame1, (p.x, p.y), (p.x + p.w, p.y + p.h), colors.blue, 2)
-
-
-        for pp in potential_people:
-            cv2.rectangle(frame1, (pp.x, pp.y), (pp.x + pp.w, pp.y + pp.h), colors.red, 2)
-
-        # ========
-        #
-        #
-        # for m in moves:
-        #     (x, y, w, h) = cv2.boundingRect(m)
-        #
-        #     if cv2.contourArea(m) < 40:
-        #          continue
-        #
-        #     if y < 250:
-        #         continue
-        #
-        #
-        #
-        #     updated = False
-        #     for p in PEOPLE_LIST :
-        #         if len(p.history) > 5:
-        #             [coord_x, coord_y] = p.predict_move()
-        #             if  dist(x,y,coord_x,coord_y) < 10 and p.dist(x,y) < 20 and p.dist(x,y) > 5 and not p.updated:
-        #                 p.update(x,y)
-        #                 p.mark_updated()
-        #                 updated = True
-        #                 break
-        #         else:
-        #             if p.dist(x,y) < 20 and p.dist(x,y) > 5 and not p.updated:
-        #                 p.update(x,y)
-        #                 p.mark_updated()
-        #                 updated = True
-        #                 break
-        #
-        #
-        #     if not updated and x < 20 and x > 680 and y < 270 and counter > 3:
-        #         person = people.Person(x,y,w,h)
-        #         person.mark_updated()
-        #         PEOPLE_LIST.append(person)
-        #         break
-        #     elif not updated and counter >= 3:
-        #         person = people.Person(x, y, w, h)
-        #         person.mark_updated()
-        #         PEOPLE_LIST.append(person)
-        #         break
-        #     else:
-        #         potential_people.append((x,y))
-        #
-        # for p in PEOPLE_LIST:
-        #     if p.updated:
-        #         cv2.rectangle(frame1, (p.x, p.y), (p.x + p.w, p.y + p.h), (0, 255, 0), 2)
-        #     else:
-        #         p.how_long_not_updated += 1
+        for p in PEOPLE_LIST:
+            if p.updated:
+                if len(p.history) > 10:
+                    cv2.rectangle(frame1, (p.x, p.y), (p.x + 15, p.y + 25), (0, 255, 0), 2)
+                    pygame.draw.circle(screen, colors.black, [p.x, p.y], 2, 2)
+                    pygame.display.update()
+                    pygame.display.flip()
 
 
         cv2.imshow("inter", frame1)
@@ -176,21 +93,23 @@ def detect():
         if cv2.waitKey(40) == 27:
             break
 
-        ret, frame1 = cap.read()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        frame1 = frame2
         ret, frame2 = cap.read()
     cv2.destroyAllWindows()
     cap.release()
 
 
-    for p in real_people:
-        print(p.history)
 
-    for p in potential_people:
-        print(p.history)
-
-
+def dist(x1,y1,x2,y2):
+    return math.hypot(x1 - x2, y1 - y2)
 
 
 detect()
-
-
+for p in PEOPLE_LIST:
+    if len(p.history) > 15:
+        print(p.history)
+people.draw_people(PEOPLE_LIST)
