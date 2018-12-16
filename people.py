@@ -3,6 +3,7 @@ import cv2 as cv
 import numpy as np
 import pygame
 import colors
+import scipy.stats
 
 
 class Person(object):
@@ -10,18 +11,29 @@ class Person(object):
         self.x = x
         self.y = y
         self.history = []
+        self.history_points = []
         self.history.append((x,y,frame_count))
+        self.history_points.append((x,y))
+        self.history_x = []
+        self.history_x.append(x)
+        self.history_y = []
+        self.history_y.append(y)
         self.updated = True
         self.tracker_initialized = False
         self.kalman_filter = cv.KalmanFilter(4,2)
         self.kalman_filter.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
         self.kalman_filter.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
         self.tracker = cv.TrackerMOSSE_create()
+        self.reliable = False
+        self.how_many_predicted = 0;
 
     def update(self, x, y, frame_count):
         self.x = x
         self.y = y
         self.history.append((x, y,frame_count))
+        self.history_points.append((x,y))
+        self.history_x.append(x)
+        self.history_y.append(y)
 
     def init_tracker(self, frame):
         self.tracker.init(frame,(self.x,self.y,self.x+15,self.y+25))
@@ -53,8 +65,9 @@ class Person(object):
         self.predicted.append(int(self.estimate[1]))
         return self.predicted
 
-
-
+    def get_standard_deviation(self):
+        _, _, _, _, std_err = scipy.stats.linregress(self.history_x, self.history_y)
+        return std_err
 
 def draw_people(PEOPLE_LIST):
     running = True
@@ -65,8 +78,8 @@ def draw_people(PEOPLE_LIST):
     screen.fill(background_colour)
     i = 0
     for person in PEOPLE_LIST:
-        if (len(person.history) > 40):
-            pygame.draw.lines(screen, colors.colors[i % len(colors.colors)], False, person.history, 2)
+        if (len(person.history_points) > 40):
+            pygame.draw.lines(screen, colors.colors[i % len(colors.colors)], False, person.history_points, 2)
             print(person.history)
             pygame.display.update()
             pygame.display.flip()

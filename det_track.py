@@ -12,10 +12,6 @@ PEOPLE_LIST = []
 
 def detect():
 
-    (width, height) = (700, 500)
-    screen = pygame.display.set_mode((width, height))
-    screen.fill(colors.white)
-
     cv2.ocl.setUseOpenCL(False)
     cap = cv2.VideoCapture(VIDEO_PATH)
 
@@ -37,8 +33,8 @@ def detect():
         blur = cv2.GaussianBlur(imgray, (5, 5), 1)
         ret, thresh = cv2.threshold(blur, 15, 255, cv2.THRESH_BINARY)
         delete_noises = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, None)
-        kernel = np.ones((5, 5), np.uint8)
-        filtered = cv2.dilate(delete_noises, kernel, iterations=1)
+        kernel = np.ones((6,3), np.uint8)
+        filtered = cv2.dilate(delete_noises, kernel, iterations=3)
 
         _, contours, _ = cv2.findContours(filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -67,7 +63,8 @@ def detect():
                         updated = True
                         break
                 else:
-                    if p.dist(x,y) < 10 and p.dist(x,y) > 5 and not p.updated:
+                    [coord_x, coord_y] = p.predict_move()
+                    if p.dist(x,y) < 10 and p.dist(x,y) > 0 and not p.updated:
                         p.update(x,y,frame_count)
                         p.mark_updated()
                         updated = True
@@ -79,23 +76,25 @@ def detect():
                 break
 
         for p in PEOPLE_LIST:
-            if p.updated:
-                if len(p.history) > 10:
-                    cv2.rectangle(frame1, (p.x, p.y), (p.x + 15, p.y + 25), (0, 255, 0), 2)
-                    pygame.draw.circle(screen, colors.black, [p.x, p.y], 2, 2)
-                    pygame.display.update()
-                    pygame.display.flip()
+            if not p.updated and len(p.history) > 10 and p.get_standard_deviation() < 0.01 and p.how_many_predicted < 3:
+                [coord_x, coord_y] = p.predict_move()
+                p.update(coord_x, coord_y, frame_count)
+                p.how_many_predicted += 1
+                p.mark_updated()
 
+        for p in PEOPLE_LIST:
+            if p.updated:
+                if len(p.history) > 15 and p.get_standard_deviation() < 0.01:
+                    cv2.rectangle(frame1, (p.x, p.y), (p.x + 15, p.y + 25), (0, 255, 0), 2)
+                    index = PEOPLE_LIST.index(p)
+                    print(index)
+                    cv2.putText(frame1, str(index + 1), (p.x - 10, p.y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
         cv2.imshow("inter", frame1)
-        cv2.imshow("Final", filtered)
+        cv2.imshow("inter2", filtered)
 
         if cv2.waitKey(40) == 27:
             break
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
 
         frame1 = frame2
         ret, frame2 = cap.read()
@@ -110,6 +109,8 @@ def dist(x1,y1,x2,y2):
 
 detect()
 for p in PEOPLE_LIST:
-    if len(p.history) > 15:
-        print(p.history)
-people.draw_people(PEOPLE_LIST)
+    if len(p.history) > 10:
+        index = PEOPLE_LIST.index(p)
+        print(index)
+        print(p.history_x)
+        print(p.history_y)

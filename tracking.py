@@ -73,8 +73,7 @@ while ret:
             running = False
 
     # Exit if ESC pressed
-    key = cv2.waitKey(1) & 0xFF
-    if key == 27:
+    if cv2.waitKey(40) == 27:
         break
 
 cap.release()
