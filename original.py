@@ -12,12 +12,22 @@ def detect():
     VIDEO_PATH = 'D:\krk.mp4'
     PEOPLE_LIST = []
     REAL_PEOPLE_LIST = []
+    TRACKERS = []
 
     cv2.ocl.setUseOpenCL(False);
     cap = cv2.VideoCapture(VIDEO_PATH)
 
     ret, frame1 = cap.read()
     ret, frame2 = cap.read()
+
+    frame1 = imutils.resize(frame1, width=700)
+
+    t1 = cv2.TrackerMOSSE_create()
+    t1.init(frame1,(60,60,75,75))
+    # t2 = cv2.TrackerMOSSE_create()
+    # t2.init(frame1, (243,366,243+15,366+25))
+    # t3 = cv2.TrackerMOSSE_create()
+    # t3.init(frame1, (237,309,237+15,309+25))
 
     while ret:
 
@@ -75,22 +85,31 @@ def detect():
                 PEOPLE_LIST.append(person)
                 break
 
-        for p in PEOPLE_LIST:
-            if p.updated:
-                cv2.rectangle(frame1, (p.x, p.y), (p.x + 15, p.y + 25), (0, 255, 0), 2)
+        #for p in PEOPLE_LIST:
+        #    if len(p.history) > 10 and  not p.tracker_initialized and len(TRACKERS) < 10:
+        #        print("init tracker!" + str(p.x) + " " + str(p.y))
+        #        p.init_tracker(frame1)
+        #        TRACKERS.append(p.tracker)
 
-        for rp in PEOPLE_LIST:
-            if not rp.updated and len(rp.history) > 10:
-                [coord_x,coord_y] = rp.predict_move()
-                rp.update(coord_x,coord_y)
-                rp.mark_updated()
+        #for t in TRACKERS:
+        #    (ok,box) = t.update(frame1)
+        #    if ok:
+        #        (x, y, w, h) = [int(v) for v in box]
+        #        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        (ok,box) = t1.update(frame1)
+        if ok:
+            (x, y, w, h) = [int(v) for v in box]
+            cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        # (ok1, box1) = t1.update(frame1)
+        # if ok:
+        #     (x, y, w, h) = [int(v) for v in box1]
+        #     cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        # (ok2, box2) = t1.update(frame1)
+        # if ok:
+        #     (x, y, w, h) = [int(v) for v in box2]
+        #     cv2.rectangle(frame1, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        #
 
-        # NEW_PEOPLE_LIST = PEOPLE_LIST
-        # for pp in PEOPLE_LIST:
-        #     if len(pp.history) > 5:
-        #         REAL_PEOPLE_LIST.append(pp)
-        #         NEW_PEOPLE_LIST.remove(pp)
-        # PEOPLE_LIST = NEW_PEOPLE_LIST
 
         cv2.imshow("inter", frame1)
         cv2.imshow("Final", filtered)
@@ -98,15 +117,8 @@ def detect():
         if cv2.waitKey(40) == 27:
             break
 
-
         frame1 = frame2
         ret, frame2 = cap.read()
-
-        #for p in REAL_PEOPLE_LIST:
-        #    print(p.history)
-
-        for p in PEOPLE_LIST:
-            print(p.history)
 
     cv2.destroyAllWindows()
     cap.release()
