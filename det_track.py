@@ -6,13 +6,20 @@ import math
 import common
 import colors
 
-VIDEO_PATH = 'D:\krakau.mov'
-PEOPLE_LIST = []
-REAL_PEOPLE = []
+
+
+def filter_people_list(PEOPLE_LIST_, frame_count_):
+    NEW_LIST = []
+    for p in PEOPLE_LIST_:
+        if len(p.history) > 10 or frame_count_- p.frame_count < 30:
+            NEW_LIST.append(p)
+    return NEW_LIST
 
 def detect():
+    PEOPLE_LIST = []
 
-    cap = cv2.VideoCapture(VIDEO_PATH)
+
+    cap = cv2.VideoCapture(common.VIDEO_PATH)
 
     ret, frame1 = cap.read()
     ret, frame2 = cap.read()
@@ -80,18 +87,23 @@ def detect():
                 if len(p.history) > common.CREDIBLE_HISTORY_LENGTH and p.get_standard_deviation() < common.MAX_DEVIATION:
                     cv2.rectangle(frame1, (p.x, p.y), (p.x + common.BBOX_WIDTH, p.y + common.BBOX_HEIGHT), colors.blue, common.LINE_WIDTH)
                     index = PEOPLE_LIST.index(p)
-                    cv2.putText(frame1, str(index + 1), (p.x - common.TEXT_MARIGIN, p.y - common.TEXT_MARIGIN), cv2.FONT_HERSHEY_SIMPLEX, common.TEXT_SIZE, colors.black, common.LINE_WIDTH)
+                    cv2.putText(frame1, str(index + 1), (p.x - common.TEXT_MARIGIN, p.y - common.TEXT_MARIGIN), cv2.FONT_HERSHEY_SIMPLEX, common.TEXT_SIZE, colors.blue, common.LINE_WIDTH)
 
         cv2.imshow(common.WINDOW_NAME, frame1)
 
         if cv2.waitKey(common.DELIM_WAIT) == common.ESC_PRESSED:
             break
 
+        if frame_count % 50 == 0:
+            X = filter_people_list(PEOPLE_LIST,frame_count)
+            PEOPLE_LIST = X
+
         frame1 = frame2
         ret, frame2 = cap.read()
 
     cv2.destroyAllWindows()
     cap.release()
+    return PEOPLE_LIST
 
 
 
@@ -99,7 +111,7 @@ def dist(x1,y1,x2,y2):
     return math.hypot(x1 - x2, y1 - y2)
 
 long_people = []
-detect()
+PEOPLE_LIST = detect()
 for p in PEOPLE_LIST:
     if len(p.history) > 10 :
         long_people.append(p)
