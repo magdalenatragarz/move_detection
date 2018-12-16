@@ -48,18 +48,6 @@ def detect():
             if y < 250:
                 continue
 
-            # for p in REAL_PEOPLE_LIST:
-            #     [coord_x, coord_y] = p.predict_move()
-            #     if dist(x, y, coord_x, coord_y) < 20 and not p.updated:
-            #         p.update(x, y)
-            #         p.mark_updated()
-            #         break
-            #     if p.dist(x, y) < 20 and not p.updated:
-            #         p.update(x, y)
-            #         p.mark_updated()
-            #         break
-
-
             if not PEOPLE_LIST:
                 person = people.Person(x,y,w,h)
                 person.mark_updated()
