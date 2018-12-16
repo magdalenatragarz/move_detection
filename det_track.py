@@ -1,14 +1,12 @@
 import cv2
 import imutils
 import people
-import pygame
-import colors
 import numpy as np
 import math
 
-VIDEO_PATH = 'D:\krk3.mov'
+VIDEO_PATH = 'D:\krakau.mov'
 PEOPLE_LIST = []
-
+REAL_PEOPLE = []
 
 def detect():
 
@@ -47,36 +45,31 @@ def detect():
             if y < 250:
                 continue
 
-            if not PEOPLE_LIST:
-                person = people.Person(x,y,frame_count)
-                person.mark_updated()
-                PEOPLE_LIST.append(person)
-                break
-
             updated = False
             for p in PEOPLE_LIST :
                 if len(p.history) > 5:
                     [coord_x, coord_y] = p.predict_move()
-                    if dist(x,y,coord_x,coord_y) < 5 and not p.updated:
+                    if dist(x,y,coord_x,coord_y) < 5 and not p.updated and p.get_standard_deviation_with_new_point(x,y) < 0.05 and (frame_count - p.frame_count)<20:
                         p.update(x,y,frame_count)
                         p.mark_updated()
+                        p.how_many_predicted = 0
                         updated = True
                         break
                 else:
-                    [coord_x, coord_y] = p.predict_move()
-                    if p.dist(x,y) < 10 and p.dist(x,y) > 0 and not p.updated:
+                    if p.dist(x,y) < 15 and p.dist(x,y) > 0 and not p.updated and p.get_standard_deviation_with_new_point(x,y) < 0.05 and (frame_count - p.frame_count)<20 :
                         p.update(x,y,frame_count)
                         p.mark_updated()
+                        p.how_many_predicted = 0
                         updated = True
                         break
             if not updated:
                 person = people.Person(x,y,frame_count)
                 person.mark_updated()
                 PEOPLE_LIST.append(person)
-                break
+                #break
 
         for p in PEOPLE_LIST:
-            if not p.updated and len(p.history) > 10 and p.get_standard_deviation() < 0.01 and p.how_many_predicted < 3:
+            if not p.updated and len(p.history) > 10 and p.get_standard_deviation() < 0.05 and p.how_many_predicted < 3 and (frame_count - p.frame_count)<20:
                 [coord_x, coord_y] = p.predict_move()
                 p.update(coord_x, coord_y, frame_count)
                 p.how_many_predicted += 1
@@ -84,11 +77,10 @@ def detect():
 
         for p in PEOPLE_LIST:
             if p.updated:
-                if len(p.history) > 15 and p.get_standard_deviation() < 0.01:
-                    cv2.rectangle(frame1, (p.x, p.y), (p.x + 15, p.y + 25), (0, 255, 0), 2)
+                if len(p.history) > 20 and p.get_standard_deviation() < 0.05:
+                    cv2.rectangle(frame1, (p.x, p.y), (p.x + 10, p.y + 20), (0, 255, 0), 2)
                     index = PEOPLE_LIST.index(p)
-                    print(index)
-                    cv2.putText(frame1, str(index + 1), (p.x - 10, p.y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
+                    cv2.putText(frame1, str(index + 1), (p.x - 10, p.y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
 
         cv2.imshow("inter", frame1)
         cv2.imshow("inter2", filtered)
@@ -98,6 +90,9 @@ def detect():
 
         frame1 = frame2
         ret, frame2 = cap.read()
+
+
+
     cv2.destroyAllWindows()
     cap.release()
 
@@ -106,11 +101,10 @@ def detect():
 def dist(x1,y1,x2,y2):
     return math.hypot(x1 - x2, y1 - y2)
 
-
+long_people = []
 detect()
 for p in PEOPLE_LIST:
-    if len(p.history) > 10:
-        index = PEOPLE_LIST.index(p)
-        print(index)
-        print(p.history_x)
-        print(p.history_y)
+    if len(p.history) > 10 :
+        long_people.append(p)
+
+people.draw_people(long_people)
