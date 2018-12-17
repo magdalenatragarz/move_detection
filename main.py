@@ -1,8 +1,8 @@
 import people
-import det_track
+import detection
 
 long_people = []
-PEOPLE_LIST = det_track.detect()
+PEOPLE_LIST = detection.detect()
 for p in PEOPLE_LIST:
     if len(p.history) > 15 :
         long_people.append(p)
