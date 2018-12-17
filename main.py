@@ -1,16 +1,10 @@
-#import detect
 import people
-import scipy.stats
-import circular_buffer
+import det_track
 
-VIDEO_PATH = 'D:\krk.mp4'
+long_people = []
+PEOPLE_LIST = det_track.detect()
+for p in PEOPLE_LIST:
+    if len(p.history) > 15 :
+        long_people.append(p)
 
-#detect.detect(VIDEO_PATH)
-
-x = circular_buffer.RingBuffer(3)
-x.append(1)
-x.append(2)
-x.append(3)
-x.append(4)
-x.append(5)
-print(x.get())
+people.draw_people(long_people)

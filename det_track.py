@@ -110,10 +110,3 @@ def detect():
 def dist(x1,y1,x2,y2):
     return math.hypot(x1 - x2, y1 - y2)
 
-long_people = []
-PEOPLE_LIST = detect()
-for p in PEOPLE_LIST:
-    if len(p.history) > 10 :
-        long_people.append(p)
-
-people.draw_people(long_people)

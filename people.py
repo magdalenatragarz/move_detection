@@ -5,6 +5,8 @@ import pygame
 import colors
 import scipy.stats
 import circular_buffer
+import common
+
 
 class Person(object):
     def __init__(self,x,y,frame_count):
@@ -20,13 +22,10 @@ class Person(object):
         self.history_y = circular_buffer.RingBuffer(15)
         self.history_y.append(y)
         self.updated = True
-        self.tracker_initialized = False
         self.kalman_filter = cv.KalmanFilter(4,2)
         self.kalman_filter.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
         self.kalman_filter.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
-        self.tracker = cv.TrackerMOSSE_create()
-        self.reliable = False
-        self.how_many_predicted = 0;
+        self.how_many_predicted = 0
 
     def update(self, x, y, frame_count):
         self.x = x
@@ -37,26 +36,17 @@ class Person(object):
         self.history_x.append(x)
         self.history_y.append(y)
 
-    def init_tracker(self, frame):
-        self.tracker.init(frame,(self.x,self.y,self.x+15,self.y+25))
-        self.tracker_initialized = True
-
-    def update_tracker(self,frame):
-        return self.tracker.upate(frame)
-
     def dist(self, x, y):
         return math.hypot(x - self.x, y - self.y)
 
     def mark_not_updated(self):
         self.updated = False
 
-
     def mark_updated(self):
         self.updated = True
 
-
     def get_current_bounding_box(self):
-        return (self.x,self.y,15,25)
+        return self.x,self.y,common.BBOX_WIDTH,common.BBOX_HEIGHT
 
     def predict_move(self):
         self.predicted = []
@@ -78,6 +68,8 @@ class Person(object):
         self.new_history_y.append(y)
         _, _, _, _, std_err = scipy.stats.linregress(self.new_history_x, self.new_history_y)
         return std_err
+
+#----------------------------------------------------------------
 
 def draw_people(PEOPLE_LIST):
     running = True
