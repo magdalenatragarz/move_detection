@@ -1,6 +1,6 @@
-class RingBuffer:
+class RingBuffer(object):
     def __init__(self, size):
-        self.data = [-1 for i in range(size)]
+        self.data = [-1 for _ in range(size)]
 
     def append(self, x):
         self.data.pop(0)

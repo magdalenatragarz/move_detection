@@ -9,32 +9,43 @@ import common
 
 
 class Person(object):
-    def __init__(self,x,y,frame_count):
+    def __init__(self, x, y, frame_count):
         self.x = x
         self.y = y
         self.frame_count = frame_count
+
+
         self.history = []
         self.history_points = []
-        self.history.append((x,y,frame_count))
-        self.history_points.append((x,y))
         self.history_x = circular_buffer.RingBuffer(15)
-        self.history_x.append(x)
         self.history_y = circular_buffer.RingBuffer(15)
+
+        self.history.append([x, y, frame_count])
+        self.history_x.append(x)
         self.history_y.append(y)
+
+        self.how_many_predicted = 0
         self.updated = True
+
         self.kalman_filter = cv.KalmanFilter(4,2)
         self.kalman_filter.measurementMatrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0]], np.float32)
         self.kalman_filter.transitionMatrix = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0, 0, 0, 1]], np.float32)
-        self.how_many_predicted = 0
+
+        self.estimate = None
+        self.measured = None
+        self.history_x_copy = None
+        self.history_y_copy = None
 
     def update(self, x, y, frame_count):
         self.x = x
         self.y = y
         self.frame_count = frame_count
-        self.history.append((x, y,frame_count))
-        self.history_points.append((x,y))
+
+        self.history.append([x, y,frame_count])
         self.history_x.append(x)
         self.history_y.append(y)
+
+        self.mark_updated()
 
     def dist(self, x, y):
         return math.hypot(x - self.x, y - self.y)
@@ -45,8 +56,20 @@ class Person(object):
     def mark_updated(self):
         self.updated = True
 
+    def is_person_predictable(self,frame_count):
+        self.long_history_length = len(self.history) > common.CREDIBLE_HISTORY_LENGTH
+        self.low_deviation = self.get_standard_deviation() < common.MAX_DEVIATION
+        self.shortly_predicted = self.how_many_predicted < common.MAX_PREDICTIONS_QUANTITY
+        self.not_too_old = frame_count - self.frame_count < common.MAX_FRAME_DIFFERENCE
+        return not self.updated  and self.long_history_length and self.low_deviation and self.shortly_predicted and self.not_too_old
+
+    def is_person_ready_to_draw(self):
+        self.credible_history = len(self.history) > common.CREDIBLE_HISTORY_LENGTH
+        self.not_a_deviant = self.get_standard_deviation() < common.MAX_DEVIATION
+        return self.credible_history and self.not_a_deviant and self.updated
+
     def get_current_bounding_box(self):
-        return self.x,self.y,common.BBOX_WIDTH,common.BBOX_HEIGHT
+        return self.x, self.y, common.BBOX_WIDTH, common.BBOX_HEIGHT
 
     def predict_move(self):
         self.predicted = []
@@ -62,34 +85,12 @@ class Person(object):
         return std_err
 
     def get_standard_deviation_with_new_point(self,x,y):
-        self.new_history_x = self.history_x.get()
-        self.new_history_x.append(x)
-        self.new_history_y = self.history_y.get()
-        self.new_history_y.append(y)
-        _, _, _, _, std_err = scipy.stats.linregress(self.new_history_x, self.new_history_y)
+        self.history_x_copy = self.history_x.get()
+        self.history_x_copy.append(x)
+        self.history_y_copy = self.history_y.get()
+        self.history_y_copy.append(y)
+        _, _, _, _, std_err = scipy.stats.linregress(self.history_x_copy, self.history_y_copy)
         return std_err
-
-#----------------------------------------------------------------
-
-def draw_people(PEOPLE_LIST):
-    running = True
-    background_colour = (255, 255, 255)
-    (width, height) = (700, 500)
-    screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption('Tutorial 1')
-    screen.fill(background_colour)
-    i = 0
-    for person in PEOPLE_LIST:
-        if (len(person.history_points) > 40):
-            pygame.draw.lines(screen, colors.colors[i % len(colors.colors)], False, person.history_points, 2)
-            print(person.history)
-            pygame.display.update()
-            pygame.display.flip()
-            i += 1
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
 
 
 
